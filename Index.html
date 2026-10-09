@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diwata | News Control</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #171914;
+      --muted: #555c55;
+      --glass: rgba(245, 247, 240, 0.84);
+      --line: rgba(23, 25, 20, 0.2);
+      --acid: #d9f36a;
+      --blue: #315fe8;
+      --shadow: 7px 7px 0 var(--ink);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: #f7f6ee;
+      background-color: #171914;
+      background-image: linear-gradient(105deg, rgba(9, 14, 16, .82), rgba(9, 14, 16, .46) 58%, rgba(9, 14, 16, .68)),
+        url("https://images.unsplash.com/photo-1623476408624-721c9185d569?q=80&w=1169&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+      background-position: center;
+      background-size: cover;
+      background-attachment: fixed;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    button, select, textarea { font: inherit; }
+    .shell {
+      display: flex;
+      width: min(1760px, calc(100% - 64px));
+      min-height: 100vh;
+      flex-direction: column;
+      margin: 0 auto;
+      padding: 28px 0 22px;
+      animation: arrive 450ms ease-out both;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 0 0 19px;
+      border-bottom: 2px solid rgba(255,255,255,.86);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid;
+      width: 46px;
+      height: 46px;
+      place-items: center;
+      background: var(--acid);
+      border: 2px solid var(--ink);
+      box-shadow: 3px 3px 0 var(--ink);
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 21px;
+    }
+    .brand-name { font-size: 15px; font-weight: 900; }
+    .brand-sub { margin-top: 3px; color: rgba(255,255,255,.72); font-size: 11px; }
+    .system-state {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 13px;
+      border: 1px solid rgba(255,255,255,.32);
+      background: rgba(14,19,19,.45);
+      backdrop-filter: blur(12px);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .state-dot { width: 9px; height: 9px; flex: 0 0 auto; background: #d6d5c9; border-radius: 50%; }
+    .state-dot.online { background: #8fe174; }
+    .state-dot.warning { background: #f1c14f; }
+    .state-dot.offline { background: #f1765f; }
+
+    .page-heading { padding: 25px 0 20px; }
+    .eyebrow {
+      display: inline-block;
+      padding: 5px 8px;
+      background: var(--acid);
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 4px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 40px;
+      line-height: 1.06;
+      font-weight: 700;
+    }
+    .page-heading p { margin: 0; color: rgba(255,255,255,.8); font-size: 14px; }
+
+    .workspace {
+      display: grid;
+      flex: 1;
+      grid-template-columns: minmax(320px, .68fr) minmax(0, 1.8fr);
+      align-items: stretch;
+      gap: 22px;
+      min-height: 560px;
+    }
+    .panel {
+      border: 1.5px solid rgba(23, 25, 20, 0.64);
+      background: var(--glass);
+      box-shadow: var(--shadow);
+      color: var(--ink);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .control-panel { padding: 24px; }
+    .panel-kicker { margin: 0 0 22px; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+    label { display: block; margin: 0 0 8px; font-size: 13px; font-weight: 800; }
+    select {
+      width: 100%;
+      min-height: 50px;
+      padding: 0 12px;
+      color: var(--ink);
+      border: 1.5px solid var(--ink);
+      border-radius: 0;
+      background: rgba(255,255,255,.82);
+    }
+    .topic-note { min-height: 42px; margin: 10px 0 19px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .button-stack { display: grid; gap: 11px; }
+    .button {
+      width: 100%;
+      min-height: 50px;
+      padding: 11px 14px;
+      border: 1.5px solid var(--ink);
+      border-radius: 0;
+      font-weight: 850;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+    .button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--ink); }
+    .button:active:not(:disabled) { transform: translate(0, 0); box-shadow: none; }
+    .button:disabled { cursor: wait; opacity: .55; }
+    .button-primary { background: var(--acid); color: var(--ink); }
+    .button-secondary { background: var(--blue); color: white; }
+    .button-secondary:disabled { background: #777; }
+    .feed-note {
+      margin: 20px 0 11px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .feed-health { display: grid; gap: 7px; }
+    .feed-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; }
+    .feed-name { font-weight: 800; }
+    .feed-state { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+    .feed-state::before { width: 7px; height: 7px; border-radius: 50%; background: #858a81; content: ""; }
+    .feed-state.online::before { background: #458a37; }
+    .feed-state.stale::before { background: #d59816; }
+    .feed-state.offline::before { background: #bd3c2c; }
+
+    .preview-panel { display: flex; min-height: 560px; flex-direction: column; overflow: hidden; }
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .preview-title { font-size: 12px; font-weight: 900; text-transform: uppercase; }
+    .preview-meta { color: var(--muted); font-size: 11px; text-align: right; }
+    .preview-wrap { display: flex; min-height: 0; flex: 1; flex-direction: column; padding: 19px 20px 16px; }
+    .generated-headline { min-height: 29px; margin-bottom: 12px; font-family: Georgia, "Times New Roman", serif; font-size: 21px; font-weight: 700; }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 410px;
+      flex: 1;
+      resize: vertical;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      color: var(--ink);
+      background: rgba(255,255,255,.58);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    textarea:focus, select:focus, button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+    textarea::placeholder { color: #74776e; }
+    .status { min-height: 21px; margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+    .status.error { color: #a3291a; font-weight: 700; }
+    .status.success { color: #386827; font-weight: 700; }
+
+    .footer-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 22px;
+      padding-top: 11px;
+      color: rgba(255,255,255,.74);
+      font-size: 11px;
+    }
+    @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 900px) {
+      .shell { width: min(100% - 36px, 720px); padding: 18px 0; }
+      .workspace { grid-template-columns: 1fr; gap: 18px; min-height: 0; }
+      h1 { font-size: 35px; }
+      .page-heading { padding: 23px 0 18px; }
+      .control-panel { padding: 20px; }
+      .preview-panel { min-height: 560px; }
+      textarea { min-height: 390px; }
+      .footer-line { flex-direction: column; gap: 5px; }
+    }
+    @media (max-width: 520px) {
+      .shell { width: calc(100% - 24px); }
+      .topbar { align-items: flex-start; }
+      .system-state { max-width: 48%; font-size: 10px; }
+      h1 { font-size: 31px; }
+      .page-heading p { max-width: 35ch; line-height: 1.5; }
+      .preview-head { align-items: flex-start; flex-direction: column; }
+      .preview-meta { text-align: left; }
+      .preview-wrap { padding: 15px; }
+      .preview-panel { min-height: 490px; }
+      textarea { min-height: 340px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">D</div>
+        <div>
+          <div class="brand-name">DIWATA / NEWS DESK</div>
+          <div class="brand-sub">CURATION CONTROL SYSTEM</div>
+        </div>
+      </div>
+      <div class="system-state" id="feed-summary" aria-live="polite"><span class="state-dot" id="feed-dot" aria-hidden="true"></span><span id="feed-summary-text">CHECKING PUBLISHERS</span></div>
+    </header>
+
+    <section class="page-heading">
+      <span class="eyebrow">Editorial operations</span>
+      <h1>News control</h1>
+      <p>Select a coverage desk, generate a fresh brief, and review before delivery.</p>
+    </section>
+
+    <section class="workspace" aria-label="News curation controls">
+      <div class="panel control-panel">
+        <h2 class="panel-kicker">01 / Configure brief</h2>
+        <label for="curator">Coverage desk</label>
+        <select id="curator" disabled aria-describedby="topic-note">
+          <option>Loading desks...</option>
+        </select>
+        <p class="topic-note" id="topic-note"></p>
+        <div class="button-stack">
+          <button class="button button-primary" id="generate" type="button" disabled>↻ &nbsp; Generate preview</button>
+          <button class="button button-secondary" id="send" type="button" disabled>Send to Google Chat &nbsp; ↗</button>
+        </div>
+        <p class="feed-note">Sources are direct RSS feeds from NPR, PBS NewsHour, and BBC News. Stories are limited to the previous 24 hours; review source links before sending.</p>
+        <div class="feed-health" id="feed-health" aria-label="Publisher feed health" aria-live="polite"></div>
+      </div>
+
+      <div class="panel preview-panel">
+        <div class="preview-head">
+          <div class="preview-title">02 / Review & deliver</div>
+          <div class="preview-meta" id="preview-meta">No brief generated</div>
+        </div>
+        <div class="preview-wrap">
+          <div class="generated-headline" id="generated-headline" aria-live="polite"></div>
+          <textarea id="preview" aria-label="Generated news brief" placeholder="Your generated brief will appear here. Review or edit it before sending." disabled></textarea>
+          <p class="status" id="status" role="status" aria-live="polite">Choose a coverage desk to get started.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer-line">
+      <span>DIWATA · NEWS CURATION</span>
+      <span>Publisher feeds · 24-hour window · Human-reviewed delivery</span>
+    </footer>
+  </main>
+
+  <script>
+    const curatorSelect = document.getElementById('curator');
+    const topicNote = document.getElementById('topic-note');
+    const generateButton = document.getElementById('generate');
+    const sendButton = document.getElementById('send');
+    const preview = document.getElementById('preview');
+    const statusLine = document.getElementById('status');
+    const previewMeta = document.getElementById('preview-meta');
+    const generatedHeadline = document.getElementById('generated-headline');
+    const feedHealth = document.getElementById('feed-health');
+    const feedSummaryText = document.getElementById('feed-summary-text');
+    const feedDot = document.getElementById('feed-dot');
+    let hasPreview = false;
+
+    function setStatus(message, kind) {
+      statusLine.textContent = message;
+      statusLine.className = 'status' + (kind ? ' ' + kind : '');
+    }
+
+    function setBusy(busy) {
+      generateButton.disabled = busy || !curatorSelect.value;
+      sendButton.disabled = busy || !hasPreview;
+      curatorSelect.disabled = busy || curatorSelect.options.length < 2;
+      preview.disabled = busy || !hasPreview;
+    }
+
+    function showFailure(error) {
+      setStatus(error && error.message ? error.message : 'Something went wrong. Please try again.', 'error');
+      setBusy(false);
+    }
+
+    function loadFeedHealth() {
+      google.script.run
+        .withSuccessHandler(function (feeds) {
+          feedHealth.replaceChildren();
+          const onlineCount = feeds.filter(function (feed) { return feed.status === 'online'; }).length;
+          feedSummaryText.textContent = onlineCount + '/' + feeds.length + ' PUBLISHERS HEALTHY';
+          feedDot.className = 'state-dot ' + (onlineCount === feeds.length ? 'online' : onlineCount ? 'warning' : 'offline');
+          feeds.forEach(function (feed) {
+            const row = document.createElement('div');
+            row.className = 'feed-row';
+            const name = document.createElement('span');
+            name.className = 'feed-name';
+            name.textContent = feed.name;
+            const state = document.createElement('span');
+            state.className = 'feed-state ' + feed.status;
+            state.textContent = feed.status === 'online' ? 'Current' : feed.status === 'stale' ? 'Stale' : 'Offline';
+            state.title = feed.detail;
+            row.append(name, state);
+            feedHealth.appendChild(row);
+          });
+        })
+        .withFailureHandler(function () {
+          feedSummaryText.textContent = 'FEED STATUS UNAVAILABLE';
+          feedDot.className = 'state-dot offline';
+        })
+        .getFeedHealth();
+    }
+
+    curatorSelect.addEventListener('change', function () {
+      const option = curatorSelect.options[curatorSelect.selectedIndex];
+      topicNote.textContent = option ? option.dataset.description || '' : '';
+      preview.value = '';
+      previewMeta.textContent = 'No brief generated';
+      generatedHeadline.textContent = '';
+      hasPreview = false;
+      setBusy(false);
+      setStatus('Ready to generate a new brief.');
+    });
+
+    generateButton.addEventListener('click', function () {
+      if (!curatorSelect.value) return;
+      hasPreview = false;
+      setBusy(true);
+      preview.value = '';
+      generatedHeadline.textContent = '';
+      previewMeta.textContent = 'Collecting publisher updates...';
+      setStatus('Collecting recent stories and generating your brief.');
+      google.script.run
+        .withSuccessHandler(function (result) {
+          preview.value = result.text;
+          generatedHeadline.textContent = result.headline;
+          previewMeta.textContent = result.count + ' source stories · ' + new Date(result.generatedAt).toLocaleString();
+          hasPreview = true;
+          setStatus('Brief ready. Review the source and verification labels before sending.', 'success');
+          setBusy(false);
+        })
+        .withFailureHandler(showFailure)
+        .generateCuratedNews(curatorSelect.value);
+    });
+
+    sendButton.addEventListener('click', function () {
+      const message = preview.value.trim();
+      if (!hasPreview || !message) return;
+      if (!window.confirm('Send this ' + curatorSelect.options[curatorSelect.selectedIndex].text + ' brief to Google Chat?')) return;
+      setBusy(true);
+      setStatus('Sending brief to Google Chat.');
+      google.script.run
+        .withSuccessHandler(function () {
+          hasPreview = false;
+          setStatus('Brief sent to Google Chat.', 'success');
+          setBusy(false);
+        })
+        .withFailureHandler(showFailure)
+        .sendCuratedNews(curatorSelect.value, message);
+    });
+
+    google.script.run
+      .withSuccessHandler(function (options) {
+        curatorSelect.replaceChildren();
+        options.forEach(function (option) {
+          const element = document.createElement('option');
+          element.value = option.id;
+          element.textContent = option.label;
+          element.dataset.description = option.description;
+          curatorSelect.appendChild(element);
+        });
+        curatorSelect.disabled = options.length === 0;
+        topicNote.textContent = options.length ? options[0].description : 'No coverage desks are configured.';
+        generateButton.disabled = options.length === 0;
+        setStatus(options.length ? 'Ready to generate a new brief.' : 'No coverage desks are configured.', options.length ? '' : 'error');
+      })
+      .withFailureHandler(showFailure)
+      .getCuratorOptions();
+
+    loadFeedHealth();
+  </script>
+</body>
+</html>
